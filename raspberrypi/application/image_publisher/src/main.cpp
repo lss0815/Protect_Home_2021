@@ -10,7 +10,8 @@ int main(int, char**)
     int m_cameraIndex = 0;
     m_videoCapture.open(m_cameraIndex);
     if(!m_videoCapture.isOpened()){
-        std::cout << "Camera " <<
+        std::cout << "Camera " << m_cameraIndex << " not working\n" << "Program restarted\n";
+        return -1;
     }
 
     m_videoCapture.set(cv::CV_CAP_PROP_FPS, 5);
