@@ -5,4 +5,4 @@ set(image_publisher_src
 
 add_executable(image_publisher ${image_publisher_src})
 
-target_include_libraries(image_publisher ${OpenCV_LIBS})
+target_link_libraries(image_publisher ${OpenCV_LIBS})
