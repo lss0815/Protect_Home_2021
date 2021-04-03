@@ -1,34 +1,40 @@
-//
-// Created by lss on 21. 4. 1..
-//
-
-#include "opencv2/opencv.hpp"
-
-using namespace cv;
+#include <opencv2/opencv.hpp>
+#include <zmq.h>
+#include <chrono>
+#include <thread>
+#include <iostream>
 
 int main(int, char**)
 {
-    VideoCapture cap;
-	cap.open(0);// open the default camera
-    if(!cap.isOpened())  // check if we succeeded
-        return -1;
-    cap.set(CV_CAP_PROP_FPS, 5);
-    cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
-    cap.set(CV_CAP_PROP_FRAME_HEIGHT, 480);
-    //Mat edges;
-    //namedWindow("edges",1);
-    if(true)
-    {
-        Mat frame;
-        cap.read(frame);
-		//cap >> frame; // get a new frame from camera
-        //cvtColor(frame, edges, COLOR_BGR2GRAY);
-        //GaussianBlur(edges, edges, Size(7,7), 1.5, 1.5);
-        //Canny(edges, edges, 0, 30, 3);
-        //imshow("edges", edges);
-        //if(waitKey(30) >= 0) break;
-		imwrite("test.jpg", frame);
+    cv::VideoCapture m_videoCapture;
+    int m_cameraIndex = 0;
+    m_videoCapture.open(m_cameraIndex);
+    if(!m_videoCapture.isOpened()){
+        std::cout << "Camera " <<
     }
-    // the camera will be deinitialized automatically in VideoCapture destructor
+
+    m_videoCapture.set(cv::CV_CAP_PROP_FPS, 5);
+    m_videoCapture.set(cv::CV_CAP_PROP_FRAME_WIDTH, 640);
+    m_videoCapture.set(cv::CV_CAP_PROP_FRAME_HEIGHT, 480);
+
+    void *m_zmqContext = zmq_ctx_new();
+    void *m_zmqRequester = zmq_socket (m_zmqContext, ZMQ_REQ);
+    zmq_connect (m_zmqRequester, "tcp://192.168.0.6:4000");
+
+    cv::Mat m_curFrame;
+    cv::vector<uchar> m_curBuffer;
+
+    int sendCnt = 0;
+    while(true)
+    {
+        m_videoCapture.read(frame);
+        cv::imencode(".jpg", m_curFrame, m_curBuffer);
+        zmq_send(publisher, m_curBuffer.data(), m_curBuffer.size(), ZMQ_NOBLOCK);
+        std::cout << ++sendCnt << " image sent\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+
+    m_videoCapture.release();
+
     return 0;
 }
