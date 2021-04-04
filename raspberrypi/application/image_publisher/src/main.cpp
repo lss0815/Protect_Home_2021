@@ -23,15 +23,18 @@ int main(int, char**)
 
     cv::Mat m_curFrame;
     std::vector<uchar> m_curBuffer;
+    zmq::message_t m_reply{};
 
     int sendCnt = 0;
     while(true)
     {
         m_videoCapture.read(m_curFrame);
         cv::imencode(".jpg", m_curFrame, m_curBuffer);
+
         zmq_send(m_zmqRequester, m_curBuffer.data(), m_curBuffer.size(), ZMQ_NOBLOCK);
         std::cout << ++sendCnt << " image sent\n";
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        m_zmqRequester.recv(m_reply, zmq::recv_flags::none);
     }
 
     m_videoCapture.release();

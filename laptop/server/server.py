@@ -1,14 +1,23 @@
 import zmq
-import numpy
+import numpy as np
 import io
 import PIL
-import cv2
+import sys
+import cv2 as cv
 
 context = zmq.Context()
-receiver = context.socket(zmq.SUB)
-receiver.connect("tcp://192.168.60.253:4000")
-receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+socket = context.socket(zmq.REP)
+socket.bind("tcp://*:4000")
 
-image_bytes = receiver.recv()
+cnt = 0
 
-image = numpy.array(PIL.Image.open(io.BytesIO(image_bytes)))
+while(True):
+    buffer = socket.recv()
+
+    nparr = np.fromstring(buffer, np.uint8)
+    img_np = cv.imdecode(nparr,  cv.IMREAD_COLOR)
+
+    cnt += 1
+    print(str(cnt) + " received")
+
+    socket.send(b"ok")
