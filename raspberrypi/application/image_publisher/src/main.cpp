@@ -23,7 +23,7 @@ int main(int, char**)
 
     cv::Mat m_curFrame;
     std::vector<uchar> m_curBuffer;
-    zmq::message_t m_reply{};
+	std::vector<uchar> m_recvBuffer(20);
 
     int sendCnt = 0;
     while(true)
@@ -34,7 +34,7 @@ int main(int, char**)
         zmq_send(m_zmqRequester, m_curBuffer.data(), m_curBuffer.size(), ZMQ_NOBLOCK);
         std::cout << ++sendCnt << " image sent\n";
 
-        m_zmqRequester.recv(m_reply, zmq::recv_flags::none);
+        zmq_recv(m_zmqRequester, m_recvBuffer.data(), m_recvBuffer.size(), 0);
     }
 
     m_videoCapture.release();
