@@ -6,4 +6,4 @@ set(image_publisher_src
 add_executable(image_publisher ${image_publisher_src})
 
 target_include_directories(image_publisher PUBLIC ${ZeroMQ_INCLUDE_DIRS})
-target_link_libraries(image_publisher ${OpenCV_LIBS} ${ZeroMQ_LIBRARIES})
+target_link_libraries(image_publisher ${OpenCV_LIBS} ${ZeroMQ_LIBRARIES} zmq)
