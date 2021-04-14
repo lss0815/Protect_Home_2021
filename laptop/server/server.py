@@ -2,18 +2,41 @@ import zmq
 import numpy as np
 import cv2 as cv
 
-context = zmq.Context()
-socket = context.socket(zmq.REP)
-socket.bind("tcp://*:4000")
+def getYoloNet():
+    net = cv.dnn.readNet("yolov4.weights", "yolov4.cfg")
+    layerName = net.getLayerNames()
+    outputLayerName = []
+    for i in net.getUnconnectedOutLayers():
+        outputLayerName.append(layerName[i[0] - 1])
 
-imgCnt = 0
+    net.setPreferableBackend(cv.dnn.DNN_BACKEND_CUDA)
+    net.setPreferableTarget(cv.dnn.DNN_TARGET_CUDA)
 
-while(True):
-    buffer = socket.recv()
+    return net
 
-    nparr = np.fromstring(buffer, np.uint8)
-    img_np = cv.imdecode(nparr,  cv.IMREAD_COLOR)
+def getInferenceResult(net, curImage):
+    imageHeight, imageWidth, imageChannel = curImage.shape
+    print(imageHeight)
+    print(imageWidth)
+    print(imageChannel)
 
-    print(imgCnt, " received")
+if __name__ == '__main__':
+    context = zmq.Context()
+    socket = context.socket(zmq.REP)
+    socket.bind("tcp://*:4000")
 
-    socket.send(b"ok")
+    yoloNet = getYoloNet()
+
+    imgCnt = 0
+
+    while(True):
+        buffer = socket.recv()
+
+        npArray = np.fromstring(buffer, np.uint8)
+        image = cv.imdecode(npArray,  cv.IMREAD_COLOR)
+        
+        print(imgCnt, " received")
+        
+        getInferenceResult(yoloNet, image)
+        
+        socket.send(b"ok")
