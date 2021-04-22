@@ -110,8 +110,6 @@ public class MainActivity extends AppCompatActivity {
                                 for(int i=0; i<tempStringArrayList.size(); i++){
                                     boolean found = false;
                                     for(int j=0; j<currentDetections.size(); j++){
-                                        Log.d(logTag, currentDetections.get(j));
-                                        Log.d(logTag, tempStringArrayList.get(i));
                                         if(currentDetections.get(j).equals(tempStringArrayList.get(i))){
                                             found = true;
                                             break;
