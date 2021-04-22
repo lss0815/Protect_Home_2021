@@ -9,6 +9,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ListViewAdapter extends BaseAdapter {
     private TextView dateTextView;
@@ -43,7 +44,7 @@ public class ListViewAdapter extends BaseAdapter {
     }
 
     @Override
-    public Object getItem(int position){
+    public ListViewItem getItem(int position){
         return listViewItemArrayList.get(position);
     }
 
@@ -53,5 +54,9 @@ public class ListViewAdapter extends BaseAdapter {
         item.setDate(_item.getDate());
 
         listViewItemArrayList.add(item);
+    }
+
+    public void clear(){
+        listViewItemArrayList.clear();
     }
 }
