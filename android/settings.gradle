@@ -1,3 +1,2 @@
-include ':OpenCV'
 include ':app'
 rootProject.name = "Protect Home"
