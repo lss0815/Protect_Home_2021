@@ -3,13 +3,31 @@ import numpy as np
 import cv2 as cv
 import threading
 import datetime
+import firebase_admin
+import uuid
+import sys
+import os
+from firebase_admin import credentials
+from firebase_admin import storage
+
+firebaseCred = credentials.Certificate("config/protecthome-d9199-firebase-adminsdk-9rdae-7476e5b886.json")
+firebase_admin.initialize_app(firebaseCred, {
+    'storageBucket': 'protecthome-d9199.appspot.com'
+})
+firebaseBucket = storage.bucket()
 
 blobScale = 0.004
 inferenceImageSize = 416
-imageArray = []
+
+detectionPeriodInSec = 60
+storeImagePeriodInSec = 5
+lastStoreImageTimestamp = datetime.datetime.now() - datetime.timedelta(seconds=storeImagePeriodInSec)
+detectionTimestamp = datetime.datetime.now() - datetime.timedelta(seconds=detectionPeriodInSec)
+detectionTimestampStr = detectionTimestamp.strftime("%Y%m%d_%H%M%S")
+
 
 def getYoloNet():
-    net = cv.dnn.readNet("yolov4.weights", "yolov4.cfg")
+    net = cv.dnn.readNet("config/yolov4.weights", "config/yolov4.cfg")
     layerName = net.getLayerNames()
     outputLayerName = []
     for i in net.getUnconnectedOutLayers():
@@ -21,12 +39,10 @@ def getYoloNet():
     return net, outputLayerName
 
 def getInferenceResult(net, outputLayer, curImage):
-    global imageArray
+    global detectionTimestamp, lastStoreImageTimestamp, detectionTimestampStr
 
     # 360, 640, 3
     curImageHeight, curImageWidth, curImageChannel = curImage.shape
-
-    timestamp = datetime.datetime.now()
 
     blobImage = cv.dnn.blobFromImage(curImage, blobScale, (inferenceImageSize, inferenceImageSize), (0, 0, 0), True, crop=False)
 
@@ -65,13 +81,27 @@ def getInferenceResult(net, outputLayer, curImage):
         i = int(temp)
         cv.rectangle(curImage, (boxes[i][0], boxes[i][1]), (boxes[i][0] + boxes[i][2], boxes[i][1] + boxes[i][3]), (255, 0, 0), 2)
 
-    print(len(resultIndice))
-    print((datetime.datetime.now() - timestamp).total_seconds())
-
     if len(resultIndice) > 0:
-        with imageArrayLock:
-            imageArray.append([curImage, len(resultIndice), timestamp])
+        isFirstDetectImage = False
+        timestamp = datetime.datetime.now()
+        timestampStr = timestamp.strftime("%Y%m%d_%H%M%S")
 
+        if ((timestamp - detectionTimestamp).total_seconds() > detectionPeriodInSec):
+            detectionTimestamp = timestamp
+            detectionTimestampStr = detectionTimestamp.strftime("%Y%m%d_%H%M%S")
+            isFirstDetectImage = True
+
+        if(isFirstDetectImage or (datetime.datetime.now() - lastStoreImageTimestamp).total_seconds() > storeImagePeriodInSec):
+            lastStoreImageTimestamp = datetime.datetime.now()
+
+            cv.imwrite('./temp_image/' + timestampStr + '.jpg', curImage)
+            blob = firebaseBucket.blob(detectionTimestampStr + '/' + timestampStr + '.jpg')
+            new_token = uuid.uuid4()
+            metadata = {"firebaseStorageDownloadTokens": new_token}
+            blob.metadata = metadata
+
+            blob.upload_from_filename(filename='./temp_image/' + timestampStr + '.jpg', content_type='image/jpg')
+            os.system('rm -f ./temp_image/*.jpg')
 
 def imageDetector():
     context = zmq.Context()
@@ -90,23 +120,6 @@ def imageDetector():
 
         socket.send(b"ok")
 
-def androidHandler():
-    context = zmq.Context()
-    socket = context.socket(zmq.REP)
-    socket.bind("tcp://*:4001")
-
-    while (True):
-        buffer = socket.recv()
-
-        with imageArrayLock:
-            if(len(imageArray) == 0):
-                socket.send(b"NULL")
-
-
-        socket.send(b"ok")
 
 if __name__ == '__main__':
-    imageArrayLock = threading.Lock()
-
-    threading.Thread(target=imageDetector(), args=()).start()
-    threading.Thread(target=androidHandler(), args=()).start()
+    imageDetector()
