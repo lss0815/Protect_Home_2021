@@ -16,7 +16,7 @@ firebase_admin.initialize_app(firebaseCred, {
 })
 firebaseBucket = storage.bucket()
 
-blobScale = 0.004
+blobScale = 1/255
 inferenceImageSize = 416
 
 detectionPeriodInSec = 60
