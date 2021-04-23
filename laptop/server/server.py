@@ -20,7 +20,7 @@ blobScale = 1/255
 inferenceImageSize = 416
 
 detectionPeriodInSec = 60
-storeImagePeriodInSec = 5
+storeImagePeriodInSec = 1
 lastStoreImageTimestamp = datetime.datetime.now() - datetime.timedelta(seconds=storeImagePeriodInSec)
 detectionTimestamp = datetime.datetime.now() - datetime.timedelta(seconds=detectionPeriodInSec)
 detectionTimestampStr = detectionTimestamp.strftime("%Y%m%d_%H%M%S")
